@@ -8,6 +8,18 @@
 
 #import "ApplicationDelegate.h"
 
+#define PRODUCT 0
+
+#if PRODUCT
+#define URL_APNS "gateway.push.apple.com"
+NSString *certificateName = @"apns_production";
+NSString *token = @"613ef065 c2b958e5 bd6322ff fd764958 cfc887bc a62237c5 042b2aa4 62f42012";
+#else
+#define URL_APNS "gateway.sandbox.push.apple.com"
+NSString *certificateName = @"apns_development";
+NSString *token = @"1ee4e223 3190b7a8 d8c4945a eea258f1 9761ac29 e6d61013 32550279 8319b741";
+#endif
+
 @interface ApplicationDelegate ()
 #pragma mark Properties
 @property(nonatomic, retain) NSString *deviceToken, *payload, *certificate;
@@ -21,13 +33,15 @@
 #pragma mark Allocation
 
 - (id)init {
-	self = [super init];
-	if(self != nil) {
-		self.deviceToken = @"";
-		self.payload = @"{\"aps\":{\"alert\":\"This is some fancy message.\",\"badge\":1}}";
-		self.certificate = [[NSBundle mainBundle] pathForResource:@"apns" ofType:@"cer"];
-	}
-	return self;
+    self = [super init];
+    if(self != nil) {
+        self.deviceToken = token;
+        self.payload = @"{\"aps\":{\"alert\":\"This is some fancy message.\",\"badge\":1,\"category\":\"Only_Category\",\"sound\":\"cash_success.m4a\"},\"type\":3,\"content\":\"要求：有责任心、沟通能力强\"}";
+        //        self.payload = @"{\"aps\":{\"alert\":\"This is some fancy message.\",\"badge\":1,\"category\":\"Only_Category\",\"content-available\":1},\"type\":3}";
+        
+        self.certificate = [[NSBundle mainBundle] pathForResource:certificateName ofType:@"cer"];
+    }
+    return self;
 }
 
 - (void)dealloc {
@@ -76,7 +90,7 @@
 	
 	// Establish connection to server.
 	PeerSpec peer;
-	result = MakeServerConnection("gateway.sandbox.push.apple.com", 2195, &socket, &peer);// NSLog(@"MakeServerConnection(): %d", result);
+	result = MakeServerConnection(URL_APNS, 2195, &socket, &peer);// NSLog(@"MakeServerConnection(): %d", result);
 	
 	// Create new SSL context.
 	result = SSLNewContext(false, &context);// NSLog(@"SSLNewContext(): %d", result);
@@ -88,7 +102,7 @@
 	result = SSLSetConnection(context, socket);// NSLog(@"SSLSetConnection(): %d", result);
 	
 	// Set server domain name.
-	result = SSLSetPeerDomainName(context, "gateway.sandbox.push.apple.com", 30);// NSLog(@"SSLSetPeerDomainName(): %d", result);
+	result = SSLSetPeerDomainName(context, URL_APNS, 30);// NSLog(@"SSLSetPeerDomainName(): %d", result);
 	
 	// Open keychain.
 	result = SecKeychainCopyDefault(&keychain);// NSLog(@"SecKeychainOpen(): %d", result);
@@ -178,7 +192,7 @@
 	
 	// Define some variables.
 	uint8_t command = 0;
-	char message[293];
+	char message[1024];
 	char *pointer = message;
 	uint16_t networkTokenLength = htons(32);
 	uint16_t networkPayloadLength = htons(payloadLength);
